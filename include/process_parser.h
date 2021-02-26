@@ -105,4 +105,15 @@ string ProcessParser::getProcUpTime(string pid) {
   return to_string(float(stof(values[13]) / sysconf(_SC_CLK_TCK)));
 }
 
+long int ProcessParser::getSysUpTime() {
+  string line;
+  ifstream stream = Util::getStream(Path::basePath() + Path::upTimePath());
+  getline(stream, line);
+  istringstream buf(line);
+  istream_iterator<string> beg(buf), end;
+  vector<string> values(beg, end);
+
+  return stol(values[0]);
+}
+
 #endif
