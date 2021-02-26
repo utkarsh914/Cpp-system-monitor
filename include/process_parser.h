@@ -154,4 +154,24 @@ string ProcessParser::getProcUser(string pid) {
   return username;
 }
 
+vector<string> ProcessParser::getPidList() {
+  DIR* dir;
+  vector<string> pidList;
+  // open "/proc" directory
+  if (!(dir = opendir("/proc"))) throw runtime_error(strerror(errno));
+
+  // one by one read the contents of "/proc"
+  while (dirent* dirp = readdir(dir)) {
+    // if it is not a directory, skip it
+    if (!dirp->d_type != DT_DIR) continue;
+    // check if every char of name is a digit
+    if (all_of(dirp->d_name, dirp->d_name + strlen(dirp->d_name),
+               [](char c) { return isdigit(c); })) {
+      pidList.push_back(dirp->d_name);
+    }
+  }
+
+  return pidList;
+}
+
 #endif
