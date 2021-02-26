@@ -37,6 +37,7 @@ class ProcessParser {
   static vector<string> getSysCpuPercent(string coreNumber = "");
   static float getSysRamPercent();
   static string getSysKernelVersion();
+  static int getNumberOfCores();
   static int getTotalThreads();
   static int getTotalNumberOfProcesses();
   static int getNumberOfRunningProcesses();
@@ -173,6 +174,82 @@ vector<string> ProcessParser::getPidList() {
   // Validating process of directory closing
   if (closedir(dir)) throw runtime_error(strerror(errno));
   return pidList;
+}
+
+string ProcessParser::getCmd(string pid) {
+  string line;
+  ifstream stream = Util::getStream(Path::basePath() + pid + Path::cmdPath());
+  getline(stream, line);
+  return line;
+}
+
+int ProcessParser::getNumberOfCores() {
+  // Get the number of host cpu cores
+  string line;
+  string name = "cpu cores";
+  ifstream stream = Util::getStream(Path::basePath() + "cpuinfo");
+  int numberOfCores = 0;
+
+  while (getline(stream, line)) {
+    // searching line by line
+    if (line.compare(0, name.size(), name) == 0) {
+      istringstream buf(line);
+      istream_iterator<string> beg(buf), end;
+      vector<string> values(beg, end);
+      numberOfCores = stoi(values[3]);
+      break;
+    }
+  }
+
+  return numberOfCores;
+}
+
+vector<string> ProcessParser::getSysCpuPercent(string coreNumber = "") {
+  // It is possible to use this method for selection of data for overall cpu or
+  // every core. when nothing is passed "cpu" line is read when, for example "0"
+  // is passed  -> "cpu0" -> data for first core is read
+  string line;
+  string name = "cpu" + coreNumber;
+  ifstream stream = Util::getStream(Path::basePath() + Path::statPath());
+
+  while (std::getline(stream, line)) {
+    // if this is the required line
+    if (line.compare(0, name.size(), name) == 0) {
+      istringstream buf(line);
+      istream_iterator<string> beg(buf), end;
+      vector<string> values(beg, end);
+      // set of cpu data active and idle times;
+      return values;
+    }
+  }
+
+  return vector<string>();
+}
+
+float getSysActiveCpuTime(vector<string> values) {
+  return (stof(values[S_USER]) + stof(values[S_NICE]) + stof(values[S_SYSTEM]) +
+          stof(values[S_IRQ]) + stof(values[S_SOFTIRQ]) +
+          stof(values[S_STEAL]) + stof(values[S_GUEST]) +
+          stof(values[S_GUEST_NICE]));
+}
+
+float getSysIdleCpuTime(vector<string> values) {
+  return (stof(values[S_IDLE]) + stof(values[S_IOWAIT]));
+}
+
+string ProcessParser::printCpuStats(vector<string> values1,
+                                    vector<string> values2) {
+  /*
+  Because CPU stats can be calculated only if you take measures in two different
+  time, this function has two parameters: two vectors of relevant values. We use
+  a formula to calculate overall activity of processor.
+  */
+  float activeTime =
+      getSysActiveCpuTime(values2) - getSysActiveCpuTime(values1);
+  float idleTime = getSysIdleCpuTime(values2) - getSysIdleCpuTime(values1);
+  float totalTime = activeTime + idleTime;
+  float result = 100.0 * (activeTime / totalTime);
+  return to_string(result);
 }
 
 #endif
