@@ -170,7 +170,8 @@ vector<string> ProcessParser::getPidList() {
       pidList.push_back(dirp->d_name);
     }
   }
-
+  // Validating process of directory closing
+  if (closedir(dir)) throw runtime_error(strerror(errno));
   return pidList;
 }
 
