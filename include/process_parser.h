@@ -53,6 +53,7 @@ string ProcessParser::getVmSize(string pid) {
   // open stream for specific file
   ifstream stream =
       Util::getStream(Path::basePath() + pid + Path::statusPath());
+
   while (getline(stream, line)) {
     // searching line by line
     // comparing starting of the line with the name (i.e. "VmData")
@@ -65,6 +66,29 @@ string ProcessParser::getVmSize(string pid) {
       break;
     }
   }
+
+  return to_string(result);
+}
+
+string ProcessParser::getCpuPercent(string pid) {
+  string line;
+  ifstream stream =
+      Util::getStream(Path::basePath() + pid + "/" + Path::statPath());
+  getline(stream, line);
+  istringstream buf(line);
+  istream_iterator<string> beg(buf), end;
+  vector<string> values(beg, end);
+
+  float utime = stof(ProcessParser::getProcUpTime(pid));
+  float stime = stof(values[14]);
+  float cutime = stof(values[15]);
+  float cstime = stof(values[16]);
+  float starttime = stof(values[21]);
+  float uptime = ProcessParser::getSysUpTime();
+  float freq = sysconf(_SC_CLK_TCK);
+  float totalTime = utime + stime + cutime + cstime;
+  float seconds = uptime - (starttime / freq);
+  float result = 100.0 * ((totalTime / freq) / seconds);
 
   return to_string(result);
 }
