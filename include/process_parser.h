@@ -116,4 +116,42 @@ long int ProcessParser::getSysUpTime() {
   return stol(values[0]);
 }
 
+string ProcessParser::getProcUser(string pid) {
+  string line;
+  string name = "Uid:";
+  string uid;
+  string username;
+
+  // open stream for specific file
+  ifstream stream =
+      Util::getStream(Path::basePath() + pid + Path::statusPath());
+
+  // extract user id first
+  while (getline(stream, line)) {
+    // searching line by line
+    if (line.compare(0, name.size(), name) == 0) {
+      istringstream buf(line);
+      istream_iterator<string> beg(buf), end;
+      vector<string> values(beg, end);
+      uid = values[1];
+      break;
+    }
+  }
+
+  // get username corresponding to the userid (uid)
+  stream = Util::getStream("/etc/passwd");
+  name = "x:" + uid;
+  while (getline(stream, line)) {
+    // searching line by line
+    if (line.find(name) != string::npos) {
+      istringstream buf(line);
+      username = line.substr(0, line.find(":"));
+      // getline(buf, username, ':');
+      break;
+    }
+  }
+
+  return username;
+}
+
 #endif
