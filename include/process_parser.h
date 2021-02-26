@@ -93,4 +93,16 @@ string ProcessParser::getCpuPercent(string pid) {
   return to_string(result);
 }
 
+string ProcessParser::getProcUpTime(string pid) {
+  string line;
+  ifstream stream =
+      Util::getStream(Path::basePath() + pid + "/" + Path::statPath());
+  getline(stream, line);
+  istringstream buf(line);
+  istream_iterator<string> beg(buf), end;
+  vector<string> values(beg, end);
+  // Using sysconf to get clock ticks of the host machine
+  return to_string(float(stof(values[13]) / sysconf(_SC_CLK_TCK)));
+}
+
 #endif
