@@ -330,4 +330,76 @@ string ProcessParser::getOsName() {
   return "";
 }
 
+int ProcessParser::getTotalThreads() {
+  string line;
+  int result = 0;
+  string name = "Threads:";
+  vector<string> pidList = ProcessParser::getPidList();
+
+  for (string pid : pidList) {
+    // getting every process and reading their number of their threads
+    ifstream stream =
+        Util::getStream(Path::basePath() + pid + Path::statusPath());
+    while (std::getline(stream, line)) {
+      if (line.compare(0, name.size(), name) == 0) {
+        istringstream buf(line);
+        istream_iterator<string> beg(buf), end;
+        vector<string> values(beg, end);
+        result += stoi(values[1]);
+        break;
+      }
+    }
+  }
+
+  return result;
+}
+
+/*
+Retrieve this info by reading /proc/stat.
+Search for the “processes” line.
+*/
+int ProcessParser::getTotalNumberOfProcesses() {
+  string line;
+  int result = 0;
+  string name = "processes";
+  ifstream stream = Util::getStream(Path::basePath() + Path::statPath());
+
+  while (std::getline(stream, line)) {
+    // format -> processes 47
+    if (line.compare(0, name.size(), name) == 0) {
+      istringstream buf(line);
+      istream_iterator<string> beg(buf), end;
+      vector<string> values(beg, end);
+      result += stoi(values[1]);
+      break;
+    }
+  }
+
+  return result;
+}
+
+/*
+Retrieve this info by reading /proc/stat.
+Search for the “procs_running” line.
+*/
+int ProcessParser::getTotalNumberOfProcesses() {
+  string line;
+  int result = 0;
+  string name = "procs_running";
+  ifstream stream = Util::getStream(Path::basePath() + Path::statPath());
+
+  while (std::getline(stream, line)) {
+    // format -> procs_running 210
+    if (line.compare(0, name.size(), name) == 0) {
+      istringstream buf(line);
+      istream_iterator<string> beg(buf), end;
+      vector<string> values(beg, end);
+      result += stoi(values[1]);
+      break;
+    }
+  }
+
+  return result;
+}
+
 #endif
