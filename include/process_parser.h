@@ -252,4 +252,45 @@ string ProcessParser::printCpuStats(vector<string> values1,
   return to_string(result);
 }
 
+float ProcessParser::getSysRamPercent() {
+  string line;
+  string name_1a = "MemTotal:";
+  string name_1b = "MemAvailable:";
+  string name_2 = "MemFree:";
+  string name_3 = "Buffers:";
+  float total_mem = 0;
+  float free_mem = 0;
+  float buffers = 0;
+
+  ifstream stream = Util::getStream(Path::basePath() + Path::memInfoPath());
+
+  while (getline(stream, line)) {
+    if (total_mem != 0 && free_mem != 0) break;
+    // find total memory
+    if ((line.compare(0, name_1a.size(), name_1a) == 0) or
+        (line.compare(0, name_1b.size(), name_1b) == 0)) {
+      istringstream buf(line);
+      istream_iterator<string> beg(buf), end;
+      vector<string> values(beg, end);
+      total_mem = stof(values[1]);
+    }
+    // find free memory
+    else if (line.compare(0, name_2.size(), name_2) == 0) {
+      istringstream buf(line);
+      istream_iterator<string> beg(buf), end;
+      vector<string> values(beg, end);
+      free_mem = stof(values[1]);
+    }
+    // find buffer memory
+    else if (line.compare(0, name_3.size(), name_3) == 0) {
+      istringstream buf(line);
+      istream_iterator<string> beg(buf), end;
+      vector<string> values(beg, end);
+      buffers = stof(values[1]);
+    }
+  }
+
+  return float(100.0 * (1 - (free_mem / (total_mem - buffers))));
+}
+
 #endif
