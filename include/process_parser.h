@@ -293,4 +293,41 @@ float ProcessParser::getSysRamPercent() {
   return float(100.0 * (1 - (free_mem / (total_mem - buffers))));
 }
 
+string ProcessParser::getSysKernelVersion() {
+  string line;
+  string name = "Linux version ";
+  ifstream stream = Util::getStream(Path::basePath() + Path::versionPath());
+
+  while (std::getline(stream, line)) {
+    if (line.compare(0, name.size(), name) == 0) {
+      istringstream buf(line);
+      istream_iterator<string> beg(buf), end;
+      vector<string> values(beg, end);
+      return values[2];
+    }
+  }
+
+  return "";
+}
+
+string ProcessParser::getOsName() {
+  string line;
+  string name = "PRETTY_NAME=";
+
+  ifstream stream = Util::getStream(("/etc/os-release"));
+
+  while (getline(stream, line)) {
+    if (line.compare(0, name.size(), name) == 0) {
+      // PRETTY_NAME="Ubuntu 18.04.4 LTS"   <-- this format
+      // it doesn't have spaces, so we can't extract using stream
+      int found = line.find("=");
+      found++;
+      string result = line.substr(found);
+      result.erase(remove(result.begin(), result.end(), '"'), result.end());
+      return result;
+    }
+  }
+  return "";
+}
+
 #endif
