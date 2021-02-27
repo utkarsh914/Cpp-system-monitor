@@ -45,6 +45,15 @@ class ProcessParser {
   static string printCpuStats(vector<string> values1, vector<string> values2);
 };
 
+/*
+  @parameter [string] : a unique process ID (PID)
+
+  retrieves data for a specific running process.
+
+  reads the file "proc/[PID]/status".
+  The line “VmData” states the process's memory usage, in kB.
+    VmSize: 8936 kB
+*/
 string ProcessParser::getVmSize(string pid) {
   string line;
   string name = "VmData";
@@ -71,6 +80,16 @@ string ProcessParser::getVmSize(string pid) {
   return to_string(result);
 }
 
+/*
+  @parameter [string] : a unique process ID (PID)
+
+  retrieves percentage of CPU being used by the process.
+
+  reads the file "proc/[PID]/stat".
+
+  Note: Because the timing is measured in CPU clock ticks, not seconds,
+  we need to convert the data from the file
+*/
 string ProcessParser::getCpuPercent(string pid) {
   string line;
   ifstream stream =
@@ -94,6 +113,15 @@ string ProcessParser::getCpuPercent(string pid) {
   return to_string(result);
 }
 
+/*
+  @parameter [string] : a unique process ID (PID)
+
+  retrieves uptime of the process.
+
+  reads the file "proc/[PID]/stat".
+
+  Note: We retrieve the system frequency for calculating the process up time.
+*/
 string ProcessParser::getProcUpTime(string pid) {
   string line;
   ifstream stream =
@@ -106,6 +134,17 @@ string ProcessParser::getProcUpTime(string pid) {
   return to_string(float(stof(values[13]) / sysconf(_SC_CLK_TCK)));
 }
 
+/*
+  @parameter [void] :
+
+  retrieves system uptime.
+
+  reads the file "proc/uptime".
+  The line is of format -
+    4239.42 31304.13
+  
+  first value is uptime in seconds
+*/
 long int ProcessParser::getSysUpTime() {
   string line;
   ifstream stream = Util::getStream(Path::basePath() + Path::upTimePath());
@@ -117,6 +156,21 @@ long int ProcessParser::getSysUpTime() {
   return stol(values[0]);
 }
 
+/*
+  @parameter [string] : a unique process ID (PID)
+  retrieves the username associated with the process.
+
+  reads the file "proc/[PID]/status" to extract the owner's userID.
+  The line is of format -
+    Uid:    0       0       0       0
+  second value is required userID.
+
+  Now need to get the username associated with this userID
+  reads "/etc/passwd". Format is -
+    myDemoUserName:x:1000:1000:,,,:/home/myDemoUserName:/bin/bash
+  
+  need to search the line containing "x:[UID]"
+*/
 string ProcessParser::getProcUser(string pid) {
   string line;
   string name = "Uid:";
@@ -155,6 +209,18 @@ string ProcessParser::getProcUser(string pid) {
   return username;
 }
 
+/*
+  @parameter [void] :
+
+  retrieves a list of all the running process.
+
+  reads the contents of "/proc/",
+  and if it is a valid processID, add it to list.
+
+  Note: valid processID directory meets 2 conditions -
+    1. It is a directory (not a file)
+    2. name of the directory contains only digits
+*/
 vector<string> ProcessParser::getPidList() {
   DIR* dir;
   vector<string> pidList;
@@ -176,6 +242,16 @@ vector<string> ProcessParser::getPidList() {
   return pidList;
 }
 
+/*
+  @parameter [string] : a unique process ID (PID)
+
+  retrieves the command that executed the process.
+
+  reads the file "proc/[PID]/cmdline".
+  It has a single line containing the command.
+  The format is -
+    /init/blablabla
+*/
 string ProcessParser::getCmd(string pid) {
   string line;
   ifstream stream = Util::getStream(Path::basePath() + pid + Path::cmdPath());
@@ -183,6 +259,17 @@ string ProcessParser::getCmd(string pid) {
   return line;
 }
 
+/*
+  @parameter [void] :
+
+  retrieves the number of CPU cores on the system.
+
+  reads the file "proc/cpuinfo".
+  This file contains detailed info of all CPU cores
+
+  so look for the line starting with "cpu cores". format is
+    cpu cores       : 4
+*/
 int ProcessParser::getNumberOfCores() {
   // Get the number of host cpu cores
   string line;
@@ -204,10 +291,27 @@ int ProcessParser::getNumberOfCores() {
   return numberOfCores;
 }
 
+/*
+  @parameter [string] (optional) : a core number.
+
+  retrieves the raw data of the CPU core.
+
+  reads the file "proc/stat".
+
+  This file contains information on overall cpu usage, as well stats for individual cores.
+  Other functions ultimately use this data to calculate total, active, and idle CPU time.
+  Every token from the raw data is stored as an individual value in a string vector.
+  The format is -
+    cpu  186663 0 110557 4171190 0 9176 0 0 0 0
+    cpu0 44137 0 35898 478517 0 5664 0 0 0 0
+    cpu2 42618 0 20646 495287 0 367 0 0 0 0
+
+  Note:
+    It is possible to use this method for selection of data for overall cpu or
+    every core. When nothing is passed "cpu" line is read.
+    When, for example "0" is passed  -> "cpu0" -> data for first core is read
+*/
 vector<string> ProcessParser::getSysCpuPercent(string coreNumber = "") {
-  // It is possible to use this method for selection of data for overall cpu or
-  // every core. when nothing is passed "cpu" line is read when, for example "0"
-  // is passed  -> "cpu0" -> data for first core is read
   string line;
   string name = "cpu" + coreNumber;
   ifstream stream = Util::getStream(Path::basePath() + Path::statPath());
@@ -226,24 +330,42 @@ vector<string> ProcessParser::getSysCpuPercent(string coreNumber = "") {
   return vector<string>();
 }
 
+/*
+  @parameter [vector<string>] :
+
+  Following two functions are for calculating active and idle time
+  and are a direct extension of the system CPU percentage.
+  They sort and categorize a newly created string vector, which contains parsed raw data from file.
+  Because most of the data is recorded as time, we are select and sum all active and idle time.
+*/
 float getSysActiveCpuTime(vector<string> values) {
-  return (stof(values[S_USER]) + stof(values[S_NICE]) + stof(values[S_SYSTEM]) +
-          stof(values[S_IRQ]) + stof(values[S_SOFTIRQ]) +
-          stof(values[S_STEAL]) + stof(values[S_GUEST]) +
-          stof(values[S_GUEST_NICE]));
+  return (stof(values[S_USER])
+        + stof(values[S_NICE])
+        + stof(values[S_SYSTEM])
+        + stof(values[S_IRQ])
+        + stof(values[S_SOFTIRQ])
+        + stof(values[S_STEAL])
+        + stof(values[S_GUEST])
+        + stof(values[S_GUEST_NICE]));
 }
 
 float getSysIdleCpuTime(vector<string> values) {
-  return (stof(values[S_IDLE]) + stof(values[S_IOWAIT]));
+  return (stof(values[S_IDLE])
+        + stof(values[S_IOWAIT]));
 }
 
+/*
+  @parameter [vector<string>] :
+  @parameter [vector<string>] :
+
+  Calculates CPU usage, either overall or for a selected core.
+
+  Because CPU stats can be calculated only if you take measures in two different time,
+  this function has two parameters: two vectors of relevant values.
+  We use a formula to calculate overall activity of processor.
+*/
 string ProcessParser::printCpuStats(vector<string> values1,
                                     vector<string> values2) {
-  /*
-  Because CPU stats can be calculated only if you take measures in two different
-  time, this function has two parameters: two vectors of relevant values. We use
-  a formula to calculate overall activity of processor.
-  */
   float activeTime =
       getSysActiveCpuTime(values2) - getSysActiveCpuTime(values1);
   float idleTime = getSysIdleCpuTime(values2) - getSysIdleCpuTime(values1);
@@ -252,6 +374,19 @@ string ProcessParser::printCpuStats(vector<string> values1,
   return to_string(result);
 }
 
+/*
+  @parameter [void] :
+
+  Reads the file "proc/memInfo",
+  where we can read three characteristic values:
+  MemAvailable,buffers and memFree.
+  
+  From these values we are calculating RAM usage in percentage.
+  Line Format is -
+    MemTotal:        7288000 kB
+    MemFree:         3963352 kB
+    Buffers:           34032 kB
+*/
 float ProcessParser::getSysRamPercent() {
   string line;
   string name_1a = "MemTotal:";
@@ -293,6 +428,17 @@ float ProcessParser::getSysRamPercent() {
   return float(100.0 * (1 - (free_mem / (total_mem - buffers))));
 }
 
+/*
+  @parameter [void] :
+
+  Reads the file "proc/version"
+
+  Need to extract from the line starting with "Linux version "
+  Line Format is -
+    Linux version 4.4.0-19041-Microsoft (Microsoft@Microsoft.com) ......
+  
+  Third word is the kernel version.
+*/
 string ProcessParser::getSysKernelVersion() {
   string line;
   string name = "Linux version ";
@@ -310,6 +456,17 @@ string ProcessParser::getSysKernelVersion() {
   return "";
 }
 
+/*
+  @parameter [void] :
+
+  reads the file "/etc/os-release".
+  
+  Extract from the line starting with "PRETTY_NAME="
+  Line Format is -
+    PRETTY_NAME="Ubuntu 18.04.4 LTS"
+  
+  Note: the line doesn't have spaces, so we can't extract using stream.
+*/
 string ProcessParser::getOsName() {
   string line;
   string name = "PRETTY_NAME=";
@@ -318,8 +475,6 @@ string ProcessParser::getOsName() {
 
   while (getline(stream, line)) {
     if (line.compare(0, name.size(), name) == 0) {
-      // PRETTY_NAME="Ubuntu 18.04.4 LTS"   <-- this format
-      // it doesn't have spaces, so we can't extract using stream
       int found = line.find("=");
       found++;
       string result = line.substr(found);
@@ -330,6 +485,19 @@ string ProcessParser::getOsName() {
   return "";
 }
 
+/*
+  @parameter [void] :
+
+  The total thread count is calculated, rather than read from a specific file.
+  We open every PID folder and read its thread count. After that,
+  we sum the thread counts to calculate the total number of threads on the host machine.
+
+  for every processID:
+    read the file "proc/[PID]/status"
+    Extract from the line starting with "Threads:"
+    Line Format is -
+      Threads:        2
+*/
 int ProcessParser::getTotalThreads() {
   string line;
   int result = 0;
@@ -355,8 +523,14 @@ int ProcessParser::getTotalThreads() {
 }
 
 /*
-Retrieve this info by reading /proc/stat.
-Search for the “processes” line.
+  @parameter [void] :
+
+  Retrieves the total number of processes on the machine.
+
+  read the file "/proc/stat"
+  Extract from the line starting with "processes"
+  Line Format is -
+    processes 97
 */
 int ProcessParser::getTotalNumberOfProcesses() {
   string line;
@@ -365,7 +539,6 @@ int ProcessParser::getTotalNumberOfProcesses() {
   ifstream stream = Util::getStream(Path::basePath() + Path::statPath());
 
   while (std::getline(stream, line)) {
-    // format -> processes 47
     if (line.compare(0, name.size(), name) == 0) {
       istringstream buf(line);
       istream_iterator<string> beg(buf), end;
@@ -379,17 +552,22 @@ int ProcessParser::getTotalNumberOfProcesses() {
 }
 
 /*
-Retrieve this info by reading /proc/stat.
-Search for the “procs_running” line.
+  @parameter [void] :
+
+  Retrieves the total number of RUNNING PROCESSES on the machine.
+
+  read the file "/proc/stat"
+  Extract from the line starting with "procs_running"
+  Line Format is -
+    procs_running 11
 */
-int ProcessParser::getTotalNumberOfProcesses() {
+int ProcessParser::getNumberOfRunningProcesses() {
   string line;
   int result = 0;
   string name = "procs_running";
   ifstream stream = Util::getStream(Path::basePath() + Path::statPath());
 
   while (std::getline(stream, line)) {
-    // format -> procs_running 210
     if (line.compare(0, name.size(), name) == 0) {
       istringstream buf(line);
       istream_iterator<string> beg(buf), end;
