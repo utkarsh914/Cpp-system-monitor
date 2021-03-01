@@ -5,12 +5,13 @@ using namespace std;
 
 class Util {
  public:
-  static string convertToTime(long int input_seconds);
+  static string convertToTime(string input);
   static string getProgressBar(string percent);
   static ifstream getStream(string path);
 };
 
-string Util::convertToTime(long int input_seconds) {
+string Util::convertToTime(string input) {
+  long int input_seconds = stol(input);
   long minutes = input_seconds / 60;
   long hours = minutes / 60;
   long seconds = int(input_seconds % 60);

@@ -24,6 +24,7 @@
 #include <thread>
 #include <vector>
 
+using namespace std;
 
 class SysInfo {
 private:
