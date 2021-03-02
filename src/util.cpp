@@ -1,11 +1,17 @@
 #include <util.h>
 
-string Util::convertToTime(long input_seconds) {
-  long minutes = input_seconds / 60;
-  long hours = minutes / 60;
-  long seconds = input_seconds % 60;
-  minutes = minutes % 60;
-  return to_string(hours) + ":" + to_string(minutes) + ":" + to_string(seconds);
+string Util::convertToTime(long seconds) {
+  long hours = seconds / 3600;
+  seconds -= hours * 3600;
+  long minutes = seconds / 60;
+  seconds -= minutes * 60;
+  string hh = to_string(hours);
+  string mm = to_string(minutes);
+  string ss = to_string(seconds);
+  if (hours < 10) hh = "0" + hh;
+  if (minutes < 10) mm = "0" + mm;
+  if (seconds < 10) ss = "0" + ss;
+  return hh + ":" + mm + ":" + ss;
 }
 
 string Util::getProgressBar(float percent) {
