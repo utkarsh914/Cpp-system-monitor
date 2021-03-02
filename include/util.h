@@ -1,3 +1,6 @@
+#ifndef UTIL_H
+#define UTIL_H
+
 #include <fstream>
 #include <string>
 
@@ -5,24 +8,23 @@ using namespace std;
 
 class Util {
  public:
-  static string convertToTime(string input);
-  static string getProgressBar(string percent);
+  static string convertToTime(long input_seconds);
+  static string getProgressBar(float percent);
   static ifstream getStream(string path);
 };
 
-string Util::convertToTime(string input) {
-  long int input_seconds = stol(input);
+string Util::convertToTime(long input_seconds) {
   long minutes = input_seconds / 60;
   long hours = minutes / 60;
-  long seconds = int(input_seconds % 60);
+  long seconds = input_seconds % 60;
   minutes = minutes % 60;
   return to_string(hours) + ":" + to_string(minutes) + ":" + to_string(seconds);
 }
 
-string Util::getProgressBar(string percent) {
-  string result = "0% ";
+string Util::getProgressBar(float percent) {
+  string result = "";
   int size_ = 50;
-  int boundaries = (stof(percent) / 100) * size_;
+  int boundaries = (percent / 100) * size_;
 
   for (int i = 0; i <= size_; i++) {
     if (i <= boundaries)
@@ -31,7 +33,7 @@ string Util::getProgressBar(string percent) {
       result += " ";
   }
 
-  result += " " + percent.substr(0, 5) + " /100%";
+  result += " " + to_string(percent).substr(0, 5) + " /100%";
   return result;
 }
 
@@ -40,3 +42,5 @@ ifstream Util::getStream(string path) {
   if (!stream) throw runtime_error("Non - existing PID");
   return stream;
 }
+
+#endif

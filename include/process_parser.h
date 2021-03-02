@@ -29,12 +29,11 @@ class ProcessParser {
  public:
   static string getCmd(string pid);
   static vector<string> getPidList();
-  static string getVmSize(string pid);
-  static string getCpuPercent(string pid);
-  static long int getSysUpTime();
-  static string getProcUpTime(string pid);
+  static float getVmSize(string pid);
+  static float getCpuPercent(string pid);
+  static long getSysUpTime();
+  static long getProcUpTime(string pid);
   static string getProcUser(string pid);
-  static vector<string> getSysCpuPercent(string coreNumber = "");
   static float getSysRamPercent();
   static string getSysKernelVersion();
   static int getNumberOfCores();
@@ -42,7 +41,8 @@ class ProcessParser {
   static int getTotalNumberOfProcesses();
   static int getNumberOfRunningProcesses();
   static string getOsName();
-  static string printCpuStats(vector<string> values1, vector<string> values2);
+  static vector<string> getSysCpuPercent(int coreNumber = -1);
+  static float printCpuStats(vector<string> values1, vector<string> values2);
 };
 
 /*
@@ -54,7 +54,7 @@ class ProcessParser {
   The line “VmData” states the process's memory usage, in kB.
     VmSize: 8936 kB
 */
-string ProcessParser::getVmSize(string pid) {
+float ProcessParser::getVmSize(string pid) {
   string line;
   string name = "VmData";
   string value;
@@ -77,7 +77,7 @@ string ProcessParser::getVmSize(string pid) {
     }
   }
 
-  return to_string(result);
+  return result;
 }
 
 /*
@@ -90,16 +90,15 @@ string ProcessParser::getVmSize(string pid) {
   Note: Because the timing is measured in CPU clock ticks, not seconds,
   we need to convert the data from the file
 */
-string ProcessParser::getCpuPercent(string pid) {
+float ProcessParser::getCpuPercent(string pid) {
   string line;
-  ifstream stream =
-      Util::getStream(Path::basePath() + pid + "/" + Path::statPath());
+  ifstream stream = Util::getStream(Path::basePath() + pid + "/" + Path::statPath());
   getline(stream, line);
   istringstream buf(line);
   istream_iterator<string> beg(buf), end;
   vector<string> values(beg, end);
 
-  float utime = stof(ProcessParser::getProcUpTime(pid));
+  float utime = ProcessParser::getProcUpTime(pid);
   float stime = stof(values[14]);
   float cutime = stof(values[15]);
   float cstime = stof(values[16]);
@@ -110,7 +109,7 @@ string ProcessParser::getCpuPercent(string pid) {
   float seconds = uptime - (starttime / freq);
   float result = 100.0 * ((totalTime / freq) / seconds);
 
-  return to_string(result);
+  return result;
 }
 
 /*
@@ -122,16 +121,15 @@ string ProcessParser::getCpuPercent(string pid) {
 
   Note: We retrieve the system frequency for calculating the process up time.
 */
-string ProcessParser::getProcUpTime(string pid) {
+long ProcessParser::getProcUpTime(string pid) {
   string line;
-  ifstream stream =
-      Util::getStream(Path::basePath() + pid + "/" + Path::statPath());
+  ifstream stream = Util::getStream(Path::basePath() + pid + "/" + Path::statPath());
   getline(stream, line);
   istringstream buf(line);
   istream_iterator<string> beg(buf), end;
   vector<string> values(beg, end);
   // Using sysconf to get clock ticks of the host machine
-  return to_string(float(stof(values[13]) / sysconf(_SC_CLK_TCK)));
+  return long(stof(values[13]) / sysconf(_SC_CLK_TCK));
 }
 
 /*
@@ -145,7 +143,7 @@ string ProcessParser::getProcUpTime(string pid) {
   
   first value is uptime in seconds
 */
-long int ProcessParser::getSysUpTime() {
+long ProcessParser::getSysUpTime() {
   string line;
   ifstream stream = Util::getStream(Path::basePath() + Path::upTimePath());
   getline(stream, line);
@@ -178,8 +176,7 @@ string ProcessParser::getProcUser(string pid) {
   string username;
 
   // open stream for specific file
-  ifstream stream =
-      Util::getStream(Path::basePath() + pid + Path::statusPath());
+  ifstream stream = Util::getStream(Path::basePath() + pid + Path::statusPath());
 
   // extract user id first
   while (getline(stream, line)) {
@@ -230,7 +227,7 @@ vector<string> ProcessParser::getPidList() {
   // one by one read the contents of "/proc"
   while (dirent* dirp = readdir(dir)) {
     // if it is not a directory, skip it
-    if (!dirp->d_type != DT_DIR) continue;
+    if (dirp->d_type != DT_DIR) continue;
     // check if every char of name is a digit
     if (all_of(dirp->d_name, dirp->d_name + strlen(dirp->d_name),
                [](char c) { return isdigit(c); })) {
@@ -311,9 +308,9 @@ int ProcessParser::getNumberOfCores() {
     every core. When nothing is passed "cpu" line is read.
     When, for example "0" is passed  -> "cpu0" -> data for first core is read
 */
-vector<string> ProcessParser::getSysCpuPercent(string coreNumber = "") {
+vector<string> ProcessParser::getSysCpuPercent(int coreNumber) {
   string line;
-  string name = "cpu" + coreNumber;
+  string name = "cpu" + (coreNumber == -1) ? "" : to_string(coreNumber);
   ifstream stream = Util::getStream(Path::basePath() + Path::statPath());
 
   while (std::getline(stream, line)) {
@@ -327,7 +324,7 @@ vector<string> ProcessParser::getSysCpuPercent(string coreNumber = "") {
     }
   }
 
-  return vector<string>();
+  return vector<string> ();
 }
 
 /*
@@ -364,14 +361,14 @@ float getSysIdleCpuTime(vector<string> values) {
   this function has two parameters: two vectors of relevant values.
   We use a formula to calculate overall activity of processor.
 */
-string ProcessParser::printCpuStats(vector<string> values1,
+float ProcessParser::printCpuStats(vector<string> values1,
                                     vector<string> values2) {
   float activeTime =
       getSysActiveCpuTime(values2) - getSysActiveCpuTime(values1);
   float idleTime = getSysIdleCpuTime(values2) - getSysIdleCpuTime(values1);
   float totalTime = activeTime + idleTime;
   float result = 100.0 * (activeTime / totalTime);
-  return to_string(result);
+  return result;
 }
 
 /*
@@ -506,8 +503,7 @@ int ProcessParser::getTotalThreads() {
 
   for (string pid : pidList) {
     // getting every process and reading their number of their threads
-    ifstream stream =
-        Util::getStream(Path::basePath() + pid + Path::statusPath());
+    ifstream stream = Util::getStream(Path::basePath() + pid + Path::statusPath());
     while (std::getline(stream, line)) {
       if (line.compare(0, name.size(), name) == 0) {
         istringstream buf(line);

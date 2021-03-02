@@ -1,4 +1,4 @@
-#pragma once
+// #pragma once
 #include "ncurses_display.h"
 #include "system.h"
 
