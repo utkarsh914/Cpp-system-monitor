@@ -20,7 +20,9 @@ System :: System() {
 
 void System :: refreshStats() {
   // getting parsed data
-  this->memPercent = ProcessParser::getSysRamPercent();
+  pair<float, float> ramInfo = ProcessParser::getSysRamInfo();
+  this->memPercent = ramInfo.first;
+  this->memTotal = ramInfo.second;
   this->upTime = ProcessParser::getSysUpTime();
   this->totalProc = ProcessParser::getTotalNumberOfProcesses();
   this->runningProc = ProcessParser::getNumberOfRunningProcesses();
@@ -82,11 +84,17 @@ void System :: refresh_Processes_List() {
 
 
 // getters
+int System::getNumberOfCores() const {
+  return this->numberOfCores;
+}
 float System::getCpuPercent() const {
   return this->cpuPercent;
 }
 float System::getMemPercent() const {
   return this->memPercent;
+}
+float System::getMemTotal() const {
+  return this->memTotal;
 }
 long System::getUpTime() const {
   return this->upTime;
@@ -105,6 +113,9 @@ int System::getThreads() const {
 }
 string System::getOsName() const {
   return this->osName;
+}
+vector<float>& System::getCoresPercent() {
+  return this->coresPercent;
 }
 vector<Process>& System :: getProcesses() {
   return this->processes;

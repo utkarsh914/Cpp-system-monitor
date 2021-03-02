@@ -16,8 +16,7 @@ float ProcessParser::getVmSize(string pid) {
   float result;
 
   // open stream for specific file
-  ifstream stream =
-      Util::getStream(Path::basePath() + pid + Path::statusPath());
+  ifstream stream = Util::getStream(Path::basePath() + pid + Path::statusPath());
 
   while (getline(stream, line)) {
     // searching line by line
@@ -26,8 +25,8 @@ float ProcessParser::getVmSize(string pid) {
       istringstream buf(line);
       istream_iterator<string> beg(buf), end;
       vector<string> values(beg, end);
-      // convert from kB -> GB
-      result = stof(values[1]) / float(1024 * 1024);
+      // convert from kB -> MB
+      result = stof(values[1]) / float(1024);
       break;
     }
   }
@@ -339,7 +338,7 @@ float ProcessParser::printCpuStats(vector<string>& values1,
     MemFree:         3963352 kB
     Buffers:           34032 kB
 */
-float ProcessParser::getSysRamPercent() {
+pair<float, float> ProcessParser::getSysRamInfo() {
   string line;
   string name_1a = "MemTotal:";
   string name_1b = "MemAvailable:";
@@ -348,6 +347,7 @@ float ProcessParser::getSysRamPercent() {
   float total_mem = 0;
   float free_mem = 0;
   float buffers = 0;
+  float memPercent = 0;
 
   ifstream stream = Util::getStream(Path::basePath() + Path::memInfoPath());
 
@@ -377,7 +377,9 @@ float ProcessParser::getSysRamPercent() {
     }
   }
 
-  return float(100.0 * (1 - (free_mem / (total_mem - buffers))));
+  memPercent = float(100.0 * (1 - (free_mem / (total_mem - buffers))));
+  // return percent , total RAM (in GB) as a pair
+  return { memPercent, total_mem / (1024.0 * 1024.0) };
 }
 
 /*

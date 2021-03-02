@@ -18,18 +18,28 @@ void NCursesDisplay::DisplaySystem(System& system, WINDOW* window) {
 
   mvwprintw(window, ++row, 2, ("Kernel: " + system.getKernelVersion()) .c_str());
 
-  mvwprintw(window, ++row, 2, "CPU: ");
-  wattron(window, COLOR_PAIR(1));
-  mvwprintw(window, row, 10, "");
-
-  wprintw(window, Util::getProgressBar(system.getCpuPercent()) .c_str());
-  wattroff(window, COLOR_PAIR(1));
+  // mvwprintw(window, ++row, 2, "CPU: ");
+  // wattron(window, COLOR_PAIR(1));
+  // mvwprintw(window, row, 10, "");
+  // wprintw(window, Util::getProgressBar(system.getCpuPercent()) .c_str());
+  // wattroff(window, COLOR_PAIR(1));
+  auto& coresPercent = system.getCoresPercent();
+  for (int i = 0; i < system.getNumberOfCores(); i++) {
+    mvwprintw(window, ++row, 2, ("CPU_" + to_string(i) + ": ") .c_str());
+    wattron(window, COLOR_PAIR(1));
+    mvwprintw(window, row, 10, "");
+    wprintw(window, (Util::getProgressBar(coresPercent[i])
+                    + " " + to_string(coresPercent[i]).substr(0,4) + "%") .c_str());
+    wattroff(window, COLOR_PAIR(1));
+  }
 
   mvwprintw(window, ++row, 2, "Memory: ");
   wattron(window, COLOR_PAIR(1));
   mvwprintw(window, row, 10, "");
 
-  wprintw(window, Util::getProgressBar(system.getMemPercent()) .c_str());
+  string ramInfo = to_string(system.getMemPercent() * system.getMemTotal() / 100.0).substr(0, 4)
+                  + "/" + to_string(system.getMemTotal()).substr(0, 4) + " [GB]";
+  wprintw(window, (Util::getProgressBar(system.getMemPercent()) + " " + ramInfo) .c_str());
   wattroff(window, COLOR_PAIR(1));
 
   mvwprintw(window, ++row, 2, ("Total Processes: " + to_string(system.getTotalProc())) .c_str());

@@ -34,7 +34,7 @@ class ProcessParser {
   static long getSysUpTime();
   static long getProcUpTime(string pid);
   static string getProcUser(string pid);
-  static float getSysRamPercent();
+  static pair<float, float> getSysRamInfo();
   static string getSysKernelVersion();
   static int getNumberOfCores();
   static int getTotalThreads();

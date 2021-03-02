@@ -22,16 +22,8 @@ private:
   long UpTime_;
 
 public:
-  Process(string pid) {
-    this->Pid_ = pid;
-    this->User_ = ProcessParser::getProcUser(pid);
-    this->Command_ = ProcessParser::getCmd(pid);
-    this->CpuUtilization_ = ProcessParser::getCpuPercent(pid);
-    this->Ram_ = ProcessParser::getVmSize(pid);
-    this->UpTime_ = ProcessParser::getProcUpTime(pid);
-  }
+  Process(string pid);
   // getters
-  // string getProcess();
   string getPid();                            // See src/process.cpp
   string getUser();                           // See src/process.cpp
   string getCommand();                        // See src/process.cpp

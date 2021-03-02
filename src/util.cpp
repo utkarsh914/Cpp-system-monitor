@@ -26,8 +26,8 @@ string Util::getProgressBar(float percent) {
       result += " ";
   }
 
-  result += " " + to_string(percent).substr(0, 5) + " /100%";
-  return result;
+  // result += " " + to_string(percent).substr(0, 5) + "%";
+  return  "[ " + result + " ]";
 }
 
 ifstream Util::getStream(string path) {

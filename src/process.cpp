@@ -1,5 +1,14 @@
 #include <process.h>
 
+Process :: Process(string pid) {
+  this->Pid_ = pid;
+  this->User_ = ProcessParser::getProcUser(pid);
+  this->Command_ = ProcessParser::getCmd(pid);
+  this->CpuUtilization_ = ProcessParser::getCpuPercent(pid);
+  this->Ram_ = ProcessParser::getVmSize(pid);
+  this->UpTime_ = ProcessParser::getProcUpTime(pid);
+}
+
 // Return this process's ID
 string Process::getPid() {
   return this->Pid_;

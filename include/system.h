@@ -41,6 +41,7 @@ private:
   vector<vector<string>> currentCpuCoresStats;
 
   float memPercent;
+  float memTotal;
   long upTime;
   int totalProc;
   int runningProc;
@@ -54,11 +55,13 @@ private:
 
 public:
   System();
+  int getNumberOfCores() const;
   void setAttributes();
   void setLastCpuMeasures();
   string getKernelVersion() const;
   string getOsName() const;
   float getMemPercent() const;
+  float getMemTotal() const;
   long getUpTime() const;
   int getThreads() const;
   int getTotalProc() const;
@@ -66,7 +69,7 @@ public:
   float getCpuPercent() const;
   void getOtherCores(int _size);
   void setCpuCoresStats();
-  // vector<float> getCoresStats() const;
+  vector<float>& getCoresPercent();
   vector<Process>& getProcesses();
   void refreshStats();
 };
