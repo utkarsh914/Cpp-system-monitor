@@ -43,6 +43,7 @@ void NCursesDisplay::DisplaySystem(System& system, WINDOW* window) {
 }
 
 void NCursesDisplay::DisplayProcesses(std::vector<Process>& processes, WINDOW* window, int n) {
+  if ((int)processes.size() < n) n = (int)processes.size();
   int row{0};
   int const pid_column{2};
   int const user_column{9};
