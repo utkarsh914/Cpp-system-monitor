@@ -29,14 +29,17 @@ using namespace std;
 
 class System {
 private:
-  vector<string> lastCpuStats;
-  vector<string> currentCpuStats;
-  vector<float> coresStats;
-  vector<vector<string>> lastCpuCoresStats;
-  vector<vector<string>> currentCpuCoresStats;
   string osName;
   string kernelVer;
+
+  int numberOfCores;
   float cpuPercent;
+  vector<string> lastCpuStats;
+  vector<string> currentCpuStats;
+  vector<float> coresPercent;
+  vector<vector<string>> lastCpuCoresStats;
+  vector<vector<string>> currentCpuCoresStats;
+
   float memPercent;
   long upTime;
   int totalProc;
@@ -44,19 +47,13 @@ private:
   int threads;
   vector<Process> processes;
 
+  // private methods
+  void calculateCpuStats();
+  void calculateCpuCoresStats();
+  void refresh_Processes_List();
+
 public:
-  /*
-    Getting initial info about system
-    Initial data for individual cores is set
-    System data is set
-  */
-  System() {
-    this->setLastCpuMeasures();
-    this->getOtherCores(ProcessParser::getNumberOfCores());
-    this->setAttributes();
-    this->osName = ProcessParser::getOsName();
-    this->kernelVer = ProcessParser::getSysKernelVersion();
-  }
+  System();
   void setAttributes();
   void setLastCpuMeasures();
   string getKernelVersion() const;
@@ -71,7 +68,7 @@ public:
   void setCpuCoresStats();
   // vector<float> getCoresStats() const;
   vector<Process>& getProcesses();
-  void refresh_Processes_List();
+  void refreshStats();
 };
 
 #endif
