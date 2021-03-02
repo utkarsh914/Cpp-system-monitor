@@ -316,8 +316,8 @@ float getSysIdleCpuTime(vector<string> values) {
   this function has two parameters: two vectors of relevant values.
   We use a formula to calculate overall activity of processor.
 */
-float ProcessParser::printCpuStats(vector<string> values1,
-                                    vector<string> values2) {
+float ProcessParser::printCpuStats(vector<string>& values1,
+                                    vector<string>& values2) {
   float activeTime =
       getSysActiveCpuTime(values2) - getSysActiveCpuTime(values1);
   float idleTime = getSysIdleCpuTime(values2) - getSysIdleCpuTime(values1);

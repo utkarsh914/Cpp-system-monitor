@@ -72,6 +72,11 @@ void System :: refresh_Processes_List() {
   for (auto& pid : pids) {
     this->processes.push_back(Process(pid));
   }
+  // sort process list by RAM usage
+  sort(this->processes.begin(), this->processes.end(), [](auto& p1, auto& p2) {
+    return p1.getRam() > p2.getRam();
+    // return p1.getCpuUtilization() > p2.getCpuUtilization();
+  });
 }
 
 
