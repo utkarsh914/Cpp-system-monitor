@@ -32,6 +32,7 @@ string Util::getProgressBar(float percent) {
 
 ifstream Util::getStream(string path) {
   ifstream stream(path);
-  if (!stream) throw runtime_error("Non - existing PID");
+  // if (!stream) throw runtime_error("Non - existing PID");
+  if (!stream) throw string("Non - existing PID");
   return stream;
 }

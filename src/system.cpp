@@ -72,7 +72,13 @@ void System :: refresh_Processes_List() {
   this->processes.clear();
   vector<string> pids = ProcessParser :: getPidList();
   for (auto& pid : pids) {
-    this->processes.push_back(Process(pid));
+    try {
+      Process p(pid);
+      this->processes.push_back(p);
+    }
+    catch (...) {
+      cout << "got an exception in system.cpp" << endl;
+    }
   }
   // sort process list by RAM usage
   sort(this->processes.begin(), this->processes.end(), [](auto& p1, auto& p2) {
